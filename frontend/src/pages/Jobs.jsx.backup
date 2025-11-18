@@ -1,0 +1,249 @@
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
+import { canDelete } from '../utils/permissions';
+import UserAvatar from '../components/UserAvatar';
+
+// Icon placeholders (using Heroicons equivalent SVG paths for better aesthetics)
+const LocationIcon = () => <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>;
+const SalaryIcon = () => <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
+const DurationIcon = () => <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
+const ViewsIcon = () => <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>;
+const DeadlineIcon = () => <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-4 4h.01M12 7v14M3 17h18M3 10h18M3 14h18" /></svg>;
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+
+const Jobs = () => {
+    const [jobs, setJobs] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [filter, setFilter] = useState('all');
+    const { user } = useAuth();
+
+    useEffect(() => {
+        loadJobs();
+    }, []);
+
+    const loadJobs = async () => {
+        try {
+            const res = await axios.get(`${API_URL}/jobs`);
+            setJobs(res.data);
+        } catch (err) {
+            console.error('Failed to load jobs:', err);
+        }
+        setLoading(false);
+    };
+
+    const handleDelete = async (jobId) => {
+        try {
+            await axios.delete(`${API_URL}/jobs/${jobId}`);
+            setJobs(jobs.filter(job => job._id !== jobId));
+        } catch (err) {
+            console.error('Failed to delete job:', err);
+            alert(err.response?.data?.message || 'Failed to delete job. Please try again.');
+        }
+    };
+
+    const filteredJobs = jobs.filter(job => {
+        if (filter === 'all') return true;
+        return job.type === filter;
+    });
+
+    const getJobTypeClasses = (type) => {
+        switch (type) {
+            case 'full-time': return 'bg-blue-600 text-white';
+            case 'part-time': return 'bg-yellow-500 text-gray-900';
+            case 'internship': return 'bg-purple-600 text-white';
+            case 'freelance': return 'bg-teal-500 text-white';
+            case 'work-study': return 'bg-red-500 text-white';
+            default: return 'bg-gray-500 text-white';
+        }
+    };
+
+    const getJobAccentColor = (type) => {
+        switch (type) {
+            case 'full-time': return 'border-blue-600';
+            case 'part-time': return 'border-yellow-500';
+            case 'internship': return 'border-purple-600';
+            case 'freelance': return 'border-teal-500';
+            case 'work-study': return 'border-red-500';
+            default: return 'border-gray-500';
+        }
+    };
+
+
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-100">
+                <div className="w-14 h-14 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="min-h-screen bg-gray-100 py-16">
+            <div className="container mx-auto px-4 max-w-7xl">
+                {/* Header and CTA */}
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-end pb-10 mb-10 border-b-4 border-indigo-100">
+                    <div>
+                        <h1 className="text-5xl lg:text-6xl font-extrabold text-gray-900 tracking-tight">
+                            <span className="text-indigo-600">Find Your Next</span> Career Path 🚀
+                        </h1>
+                        <p className="text-xl text-gray-600 mt-3 font-light">Explore hand-picked jobs and internships for bright minds.</p>
+                    </div>
+                    {user && (
+                        <Link
+                            to="/jobs/create"
+                            className="mt-6 md:mt-0 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-3 rounded-xl font-bold text-lg hover:from-indigo-700 hover:to-purple-700 transition duration-300 shadow-xl transform hover:scale-[1.03] hover:shadow-2xl flex items-center gap-2"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
+                            Post New Job
+                        </Link>
+                    )}
+                </div>
+
+                {/* Filters (Modern Tabs Style) */}
+                <div className="bg-white rounded-2xl shadow-2xl p-6 mb-12 border border-gray-200">
+                    <h3 className="text-xl font-bold text-gray-800 mb-4 border-b pb-3">Filter Opportunities</h3>
+                    <div className="flex flex-wrap gap-3">
+                        {[
+                            { value: 'all', label: 'All Jobs', icon: '✨' },
+                            { value: 'full-time', label: 'Full-Time', icon: '💼' },
+                            { value: 'part-time', label: 'Part-Time', icon: '⏳' },
+                            { value: 'internship', label: 'Internship', icon: '🎓' },
+                            { value: 'freelance', label: 'Freelance', icon: '💻' },
+                            { value: 'work-study', label: 'Work-Study', icon: '📚' }
+                        ].map(({ value, label, icon }) => (
+                            <button
+                                key={value}
+                                onClick={() => setFilter(value)}
+                                className={`px-5 py-2.5 rounded-full font-semibold text-base transition-all duration-300 transform hover:scale-105 border-2 ${filter === value
+                                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-200/50'
+                                    : 'bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-200'
+                                    }`}
+                            >
+                                {icon} {label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Jobs List */}
+                {filteredJobs.length === 0 ? (
+                    <div className="bg-white rounded-2xl shadow-2xl p-20 text-center border-4 border-dashed border-gray-300">
+                        <div className="text-7xl mb-4">😔</div>
+                        <h3 className="text-3xl font-bold text-gray-900 mb-2">No {filter !== 'all' ? filter.replace('-', ' ').toUpperCase() : ''} Opportunities Found</h3>
+                        <p className="text-gray-600 text-lg">Adjust your filters or be the first to post a new job!</p>
+                    </div>
+                ) : (
+                    <div className="space-y-8">
+                        {filteredJobs.map(job => {
+                            const showDelete = canDelete(user, job.poster);
+                            return (
+                                <div
+                                    key={job._id}
+                                    className={`bg-white rounded-2xl shadow-xl border-l-8 ${getJobAccentColor(job.type)} hover:shadow-3xl transition-all duration-300 transform hover:translate-y-[-4px] p-8 relative`}
+                                >
+                                    {/* Job Card Content */}
+                                    <Link to={`/jobs/${job._id}`} className="block">
+                                        <div className="flex items-start justify-between gap-8">
+
+                                            {/* Company Image/Logo */}
+                                            {job.images && job.images.length > 0 && (
+                                                <div className="flex-shrink-0">
+                                                    <img
+                                                        src={job.images[0]}
+                                                        alt={job.company}
+                                                        className="w-20 h-20 object-contain rounded-xl border border-gray-200 p-1 shadow-md"
+                                                    />
+                                                </div>
+                                            )}
+
+                                            {/* Job Details Section */}
+                                            <div className="flex-1 pr-6">
+                                                <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-2">
+                                                    <h3 className="text-3xl font-extrabold text-gray-900 leading-snug">{job.title}</h3>
+                                                    <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase shadow-inner ${getJobTypeClasses(job.type)}`}>
+                                                        {job.type.replace('-', ' ')}
+                                                    </span>
+                                                </div>
+
+                                                <p className="text-xl text-indigo-700 font-semibold mb-3">{job.company}</p>
+
+                                                <p className="text-gray-600 mb-4 line-clamp-2 text-base">{job.description}</p>
+
+                                                {/* Quick Info Line */}
+                                                <div className="flex flex-wrap gap-x-8 gap-y-3 text-base font-medium text-gray-700 pt-3 border-t border-gray-100">
+                                                    <InfoItem icon={<LocationIcon />} value={job.location} />
+                                                    {job.salary && <InfoItem icon={<SalaryIcon />} value={job.salary} />}
+                                                    {job.duration && <InfoItem icon={<DurationIcon />} value={job.duration} />}
+                                                    <InfoItem icon={<ViewsIcon />} value={`${job.views || 0} views`} />
+                                                </div>
+                                            </div>
+
+                                            {/* Poster & Deadline Section */}
+                                            <div className="w-56 flex-shrink-0 flex flex-col items-end justify-between text-right border-l border-gray-100 pl-6">
+                                                {/* Poster Info */}
+                                                {job.poster && (
+                                                    <div
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            window.location.href = `/profile/${job.poster._id}`;
+                                                        }}
+                                                        className="flex items-center gap-2 hover:opacity-90 transition p-2 rounded-xl cursor-pointer bg-gray-50 border border-gray-200 shadow-inner"
+                                                    >
+                                                        <div className='text-sm text-gray-600 font-medium'>Posted by</div>
+                                                        <UserAvatar user={job.poster} size="sm" />
+                                                    </div>
+                                                )}
+
+                                                <div className="mt-8">
+                                                    {job.applicationDeadline && (
+                                                        <div className="text-base font-bold text-red-600 flex items-center justify-end gap-1 mb-1">
+                                                            <DeadlineIcon />
+                                                            Deadline: {new Date(job.applicationDeadline).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                                                        </div>
+                                                    )}
+                                                    <div className="text-xs text-gray-500">
+                                                        Posted on {new Date(job.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Skills Tags - Moved to the bottom for better flow */}
+                                        {job.skills && job.skills.length > 0 && (
+                                            <div className="flex flex-wrap gap-2 mt-6 pt-4 border-t border-gray-200">
+                                                <span className="text-sm font-semibold text-gray-700 mr-2">Skills:</span>
+                                                {job.skills.slice(0, 5).map((skill, idx) => (
+                                                    <span key={idx} className="px-4 py-1.5 bg-indigo-50 text-indigo-700 rounded-full text-xs font-medium border border-indigo-200 shadow-sm transition hover:bg-indigo-100">
+                                                        {skill}
+                                                    </span>
+                                                ))}
+                                                {job.skills.length > 5 && (
+                                                    <span className="px-4 py-1.5 bg-gray-100 text-gray-500 rounded-full text-xs font-medium border border-gray-300">
+                                                        +{job.skills.length - 5} more
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )}
+                                    </Link>
+                            ))}
+                                </div>
+                            )
+                        }
+            </div>
+        </div>
+            );
+};
+
+            export default Jobs;
+
+            // --- Helper Component ---
+            const InfoItem = ({icon, value}) => (
+            <span className="flex items-center gap-1.5 whitespace-nowrap">
+                {icon}
+                <span className="text-gray-700 font-medium">{value}</span>
+            </span>
+            );
