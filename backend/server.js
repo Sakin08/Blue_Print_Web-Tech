@@ -22,6 +22,7 @@ const io = new Server(httpServer, {
       "http://localhost:5173",
       "http://localhost:5174",
       "http://localhost:5175",
+      "https://blue-print-web-tech.vercel.app"
     ],
     credentials: true,
     methods: ["GET", "POST"],
