@@ -34,13 +34,19 @@ const app = express();
 // CORS configuration for deployment
 const allowedOrigins = [
   process.env.FRONTEND_URL || "http://localhost:5173",
+  "https://sust-connect.vercel.app", // Production frontend
+  "http://localhost:5173", // Local development
 ];
 
 const corsOptions = {
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
+      console.log("Blocked origin:", origin);
       callback(new Error("Not allowed by CORS"));
     }
   },
@@ -62,7 +68,9 @@ app.use(cookieParser());
 
 // Health check
 app.get("/", (req, res) => res.send("SUST Connect backend is running!"));
-app.get("/api/health", (req, res) => res.json({ message: "Backend running", timestamp: new Date() }));
+app.get("/api/health", (req, res) =>
+  res.json({ message: "Backend running", timestamp: new Date() })
+);
 
 // Routes
 app.use("/api/auth", authRoutes);
