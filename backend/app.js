@@ -1,4 +1,3 @@
-// Updated backend/app.js with backup CORS
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -32,15 +31,13 @@ import busScheduleRoutes from "./routes/busScheduleRoutes.js";
 
 const app = express();
 
-// Primary CORS configuration
+// CORS configuration for deployment
 const allowedOrigins = [
-  "http://localhost:5173",
-  "http://localhost:5174",
-  "http://localhost:5175",
+  process.env.FRONTEND_URL || "http://localhost:5173",
 ];
+
 const corsOptions = {
   origin: function (origin, callback) {
-    console.log("Incoming origin for CORS:", origin);
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -58,13 +55,14 @@ const corsOptions = {
   exposedHeaders: ["Set-Cookie"],
   optionsSuccessStatus: 200,
 };
-app.use(cors(corsOptions));
 
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
-app.get("/", (req, res) => {
-  res.send("SUST Connect backend is running!");
-});
+
+// Health check
+app.get("/", (req, res) => res.send("SUST Connect backend is running!"));
+app.get("/api/health", (req, res) => res.json({ message: "Backend running", timestamp: new Date() }));
 
 // Routes
 app.use("/api/auth", authRoutes);
@@ -93,14 +91,6 @@ app.use("/api/saved-posts", savedPostRoutes);
 app.use("/api/quick-menu", quickMenuRoutes);
 app.use("/api/holidays", holidayRoutes);
 app.use("/api/bus-schedule", busScheduleRoutes);
-
-// Health check endpoint
-app.get("/api/health", (req, res) => {
-  res.json({
-    message: "CORS is working!",
-    timestamp: new Date().toISOString(),
-  });
-});
 
 app.use(errorHandler);
 
