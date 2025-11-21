@@ -71,17 +71,59 @@ export const getPost = async (req, res) => {
   }
 };
 
-export const updatePost = async (req, res) => {
-  const post = await BuySellPost.findById(req.params.id);
-  if (!post) return res.status(404).json({ message: "Post not found" });
-  if (post.user.toString() !== req.user._id.toString()) {
-    return res.status(403).json({ message: "Not authorized" });
-  }
+export const updatePost = [
+  upload.array("images", 5),
+  async (req, res) => {
+    try {
+      const post = await BuySellPost.findById(req.params.id);
+      if (!post) return res.status(404).json({ message: "Post not found" });
+      if (post.user.toString() !== req.user._id.toString()) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
 
-  Object.assign(post, req.body);
-  await post.save();
-  res.json(post);
-};
+      const { title, description, price, location, existingImages } = req.body;
+
+      // Parse existing images
+      const parsedExistingImages = existingImages
+        ? JSON.parse(existingImages)
+        : post.images || [];
+
+      // Handle new image uploads
+      let newImageUrls = [];
+      if (req.files && req.files.length > 0) {
+        newImageUrls = await Promise.all(
+          req.files.map((file) => uploadImage(file))
+        );
+      }
+
+      // Combine existing and new images
+      const allImages = [...parsedExistingImages, ...newImageUrls];
+
+      // Update post data
+      const updateData = {
+        title: title || post.title,
+        description: description || post.description,
+        price: price || post.price,
+        location: location || post.location,
+        images: allImages,
+        image: allImages[0], // First image as main
+      };
+
+      Object.assign(post, updateData);
+      await post.save();
+
+      await post.populate(
+        "user",
+        "name email phone profilePicture department batch isStudentVerified"
+      );
+
+      res.json(post);
+    } catch (error) {
+      console.error("Update error:", error);
+      res.status(500).json({ message: error.message });
+    }
+  },
+];
 
 export const deletePost = async (req, res) => {
   try {

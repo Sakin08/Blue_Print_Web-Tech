@@ -48,6 +48,45 @@ export const createLostFound = [
         "name email profilePicture department batch isStudentVerified"
       );
 
+      // Broadcast notification to all users
+      try {
+        const User = (await import("../models/User.js")).default;
+        const Notification = (await import("../models/Notification.js"))
+          .default;
+
+        const allUsers = await User.find({ _id: { $ne: req.user._id } }).select(
+          "_id"
+        );
+
+        const notifications = allUsers.map((user) => ({
+          recipient: user._id,
+          sender: req.user._id,
+          type: "lost_found",
+          title: `${item.type === "lost" ? "🔴 Lost Item" : "🟢 Found Item"}: ${
+            item.title
+          }`,
+          message: `${item.description.substring(0, 100)}...`,
+          link: `/lost-found/${item._id}`,
+        }));
+
+        if (notifications.length > 0) {
+          await Notification.insertMany(notifications);
+
+          // Emit socket event to all users
+          const io = req.app.get("io");
+          if (io) {
+            allUsers.forEach((user) => {
+              io.to(`user_${user._id}`).emit("notification", {
+                type: "lost_found",
+                message: `New ${item.type} item: ${item.title}`,
+              });
+            });
+          }
+        }
+      } catch (notifError) {
+        console.error("Failed to send broadcast notifications:", notifError);
+      }
+
       res.status(201).json(item);
     } catch (error) {
       res.status(500).json({ message: error.message });
@@ -150,6 +189,77 @@ export const updateItemStatus = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+export const updateLostFound = [
+  upload.array("images", 3),
+  async (req, res) => {
+    try {
+      const item = await LostFound.findById(req.params.id);
+      if (!item) return res.status(404).json({ message: "Item not found" });
+      if (item.poster.toString() !== req.user._id.toString()) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      const {
+        title,
+        description,
+        type,
+        category,
+        location,
+        date,
+        contactInfo,
+        color,
+        brand,
+        identifyingFeatures,
+        existingImages,
+      } = req.body;
+
+      // Parse existing images
+      const parsedExistingImages = existingImages
+        ? JSON.parse(existingImages)
+        : item.images || [];
+
+      // Handle new image uploads
+      let newImageUrls = [];
+      if (req.files && req.files.length > 0) {
+        newImageUrls = await Promise.all(
+          req.files.map((file) => uploadImage(file))
+        );
+      }
+
+      // Combine existing and new images
+      const allImages = [...parsedExistingImages, ...newImageUrls];
+
+      // Update item data
+      const updateData = {
+        title: title || item.title,
+        description: description || item.description,
+        type: type || item.type,
+        category: category || item.category,
+        location: location || item.location,
+        date: date || item.date,
+        contactInfo: contactInfo || item.contactInfo,
+        color: color || item.color,
+        brand: brand || item.brand,
+        identifyingFeatures: identifyingFeatures || item.identifyingFeatures,
+        images: allImages,
+      };
+
+      Object.assign(item, updateData);
+      await item.save();
+
+      await item.populate(
+        "poster",
+        "name email profilePicture department batch isStudentVerified"
+      );
+
+      res.json(item);
+    } catch (error) {
+      console.error("Update lost/found error:", error);
+      res.status(500).json({ message: error.message });
+    }
+  },
+];
 
 export const deleteLostFound = async (req, res) => {
   try {

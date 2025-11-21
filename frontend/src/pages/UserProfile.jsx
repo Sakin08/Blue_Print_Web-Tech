@@ -5,7 +5,7 @@ import axios from 'axios';
 import {
     Camera, MapPin, Calendar, Mail, Phone, Users, Heart,
     MessageCircle, Share2, Edit, Award, BookOpen,
-    Home, CheckCircle, Star, X, Save
+    Home, CheckCircle, X, Save
 } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
@@ -106,17 +106,18 @@ const UserProfile = () => {
         try {
             const updatedData = {
                 name: editData.name,
-                username: editData.username.trim() || null,
+                username: editData.username?.trim() || null,
                 bio: editData.bio,
                 phone: editData.phone,
                 gender: editData.gender,
                 dateOfBirth: editData.dateOfBirth || undefined,
-                interests: editData.interests.split(',').map(i => i.trim()).filter(Boolean),
+                interests: editData.interests ? editData.interests.split(',').map(i => i.trim()).filter(Boolean) : [],
                 socialLinks: editData.socialLinks,
                 address: editData.address,
                 dormInfo: editData.dormInfo
             };
 
+            console.log('Saving profile with data:', updatedData);
             const res = await axios.put(`${API_URL}/users/profile`, updatedData, { withCredentials: true });
             setProfile(prev => ({ ...prev, ...res.data }));
             if (currentUser) {
@@ -126,6 +127,7 @@ const UserProfile = () => {
             setSaveMessage({ type: 'success', text: 'Profile updated successfully!' });
             setTimeout(() => setSaveMessage({ type: '', text: '' }), 3000);
         } catch (err) {
+            console.error('Profile save error:', err.response?.data);
             setSaveMessage({ type: 'error', text: err.response?.data?.message || 'Failed to update profile' });
         }
     };
@@ -232,9 +234,6 @@ const UserProfile = () => {
                                             <button
                                                 onClick={() => {
                                                     setIsEditing(!isEditing);
-                                                    if (!isEditing) {
-                                                        setActiveTab('about');
-                                                    }
                                                 }}
                                                 className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all shadow-lg ${isEditing
                                                     ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -310,17 +309,6 @@ const UserProfile = () => {
                                     <div className="text-2xl font-extrabold text-gray-900">{profile.following?.length || 0}</div>
                                     <div className="text-sm text-gray-600">Following</div>
                                 </button>
-                                <div className="text-center">
-                                    <div className="text-2xl font-extrabold text-gray-900">{profile.reputationPoints || 0}</div>
-                                    <div className="text-sm text-gray-600">Reputation</div>
-                                </div>
-                                <div className="text-center">
-                                    <div className="flex items-center justify-center gap-1">
-                                        <Star className="w-5 h-5 text-yellow-500" fill="currentColor" />
-                                        <span className="text-2xl font-extrabold text-gray-900">{profile.rating?.toFixed(1) || '0.0'}</span>
-                                    </div>
-                                    <div className="text-sm text-gray-600">Rating ({profile.reviewCount || 0})</div>
-                                </div>
                             </div>
                         </div>
                     </div>

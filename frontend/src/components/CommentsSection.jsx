@@ -11,6 +11,8 @@ const CommentsSection = ({ postType, postId }) => {
     const [newComment, setNewComment] = useState('');
     const [loading, setLoading] = useState(false);
     const [replyingTo, setReplyingTo] = useState(null);
+    const [editingComment, setEditingComment] = useState(null);
+    const [editText, setEditText] = useState('');
     const { user } = useAuth();
 
     useEffect(() => {
@@ -91,6 +93,34 @@ const CommentsSection = ({ postType, postId }) => {
         } catch (err) {
             console.error('Failed to like comment:', err);
         }
+    };
+
+    const handleEdit = (comment) => {
+        setEditingComment(comment._id);
+        setEditText(comment.content);
+    };
+
+    const handleUpdateComment = async (commentId) => {
+        if (!editText.trim()) return;
+
+        try {
+            await axios.put(`${API_URL}/comments/${commentId}`, {
+                content: editText
+            }, {
+                withCredentials: true
+            });
+
+            await loadComments();
+            setEditingComment(null);
+            setEditText('');
+        } catch (err) {
+            alert('Failed to update comment');
+        }
+    };
+
+    const cancelEdit = () => {
+        setEditingComment(null);
+        setEditText('');
     };
 
     const handleDelete = async (commentId) => {
@@ -195,38 +225,78 @@ const CommentsSection = ({ postType, postId }) => {
                                         </div>
                                     )}
 
-                                    <p className="text-gray-700 mb-2 whitespace-pre-wrap">{comment.content}</p>
+                                    {editingComment === comment._id ? (
+                                        <div className="space-y-2">
+                                            <textarea
+                                                value={editText}
+                                                onChange={(e) => setEditText(e.target.value)}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 resize-none"
+                                                rows="3"
+                                            />
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => handleUpdateComment(comment._id)}
+                                                    className="px-4 py-1 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition"
+                                                >
+                                                    Save
+                                                </button>
+                                                <button
+                                                    onClick={cancelEdit}
+                                                    className="px-4 py-1 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300 transition"
+                                                >
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <p className="text-gray-700 mb-2 whitespace-pre-wrap">
+                                                {comment.content}
+                                                {comment.isEdited && (
+                                                    <span className="text-xs text-gray-500 ml-2">(edited)</span>
+                                                )}
+                                            </p>
 
-                                    <div className="flex items-center gap-4">
-                                        <button
-                                            onClick={() => handleLike(comment._id)}
-                                            className="flex items-center gap-1 text-sm text-gray-600 hover:text-indigo-600 transition"
-                                        >
-                                            <svg className="w-4 h-4" fill={comment.likes?.some(l => l === user?._id) ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                                            </svg>
-                                            {comment.likes?.length || 0}
-                                        </button>
+                                            <div className="flex items-center gap-4">
+                                                <button
+                                                    onClick={() => handleLike(comment._id)}
+                                                    className="flex items-center gap-1 text-sm text-gray-600 hover:text-indigo-600 transition"
+                                                >
+                                                    <svg className="w-4 h-4" fill={comment.likes?.some(l => l === user?._id) ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                                    </svg>
+                                                    {comment.likes?.length || 0}
+                                                </button>
 
-                                        {user && (
-                                            <button
-                                                onClick={() => handleReply(comment)}
-                                                className="flex items-center gap-1 text-sm text-gray-600 hover:text-indigo-600 transition"
-                                            >
-                                                <Reply className="w-4 h-4" />
-                                                Reply
-                                            </button>
-                                        )}
+                                                {user && (
+                                                    <button
+                                                        onClick={() => handleReply(comment)}
+                                                        className="flex items-center gap-1 text-sm text-gray-600 hover:text-indigo-600 transition"
+                                                    >
+                                                        <Reply className="w-4 h-4" />
+                                                        Reply
+                                                    </button>
+                                                )}
 
-                                        {user && comment.author?._id === user._id && (
-                                            <button
-                                                onClick={() => handleDelete(comment._id)}
-                                                className="text-sm text-red-600 hover:text-red-700 transition"
-                                            >
-                                                Delete
-                                            </button>
-                                        )}
-                                    </div>
+                                                {user && comment.author?._id === user._id && (
+                                                    <>
+                                                        <button
+                                                            onClick={() => handleEdit(comment)}
+                                                            className="text-sm text-indigo-600 hover:text-indigo-700 transition"
+                                                        >
+                                                            Edit
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDelete(comment._id)}
+                                                            className="text-sm text-red-600 hover:text-red-700 transition"
+                                                        >
+                                                            Delete
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             </div>
 
@@ -251,38 +321,78 @@ const CommentsSection = ({ postType, postId }) => {
                                                     </div>
                                                 )}
 
-                                                <p className="text-gray-700 mb-2 whitespace-pre-wrap">{reply.content}</p>
+                                                {editingComment === reply._id ? (
+                                                    <div className="space-y-2">
+                                                        <textarea
+                                                            value={editText}
+                                                            onChange={(e) => setEditText(e.target.value)}
+                                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 resize-none"
+                                                            rows="3"
+                                                        />
+                                                        <div className="flex gap-2">
+                                                            <button
+                                                                onClick={() => handleUpdateComment(reply._id)}
+                                                                className="px-4 py-1 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition"
+                                                            >
+                                                                Save
+                                                            </button>
+                                                            <button
+                                                                onClick={cancelEdit}
+                                                                className="px-4 py-1 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300 transition"
+                                                            >
+                                                                Cancel
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <p className="text-gray-700 mb-2 whitespace-pre-wrap">
+                                                            {reply.content}
+                                                            {reply.isEdited && (
+                                                                <span className="text-xs text-gray-500 ml-2">(edited)</span>
+                                                            )}
+                                                        </p>
 
-                                                <div className="flex items-center gap-4">
-                                                    <button
-                                                        onClick={() => handleLike(reply._id)}
-                                                        className="flex items-center gap-1 text-sm text-gray-600 hover:text-indigo-600 transition"
-                                                    >
-                                                        <svg className="w-4 h-4" fill={reply.likes?.some(l => l === user?._id) ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                                                        </svg>
-                                                        {reply.likes?.length || 0}
-                                                    </button>
+                                                        <div className="flex items-center gap-4">
+                                                            <button
+                                                                onClick={() => handleLike(reply._id)}
+                                                                className="flex items-center gap-1 text-sm text-gray-600 hover:text-indigo-600 transition"
+                                                            >
+                                                                <svg className="w-4 h-4" fill={reply.likes?.some(l => l === user?._id) ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                                                </svg>
+                                                                {reply.likes?.length || 0}
+                                                            </button>
 
-                                                    {user && (
-                                                        <button
-                                                            onClick={() => handleReply(reply)}
-                                                            className="flex items-center gap-1 text-sm text-gray-600 hover:text-indigo-600 transition"
-                                                        >
-                                                            <Reply className="w-4 h-4" />
-                                                            Reply
-                                                        </button>
-                                                    )}
+                                                            {user && (
+                                                                <button
+                                                                    onClick={() => handleReply(reply)}
+                                                                    className="flex items-center gap-1 text-sm text-gray-600 hover:text-indigo-600 transition"
+                                                                >
+                                                                    <Reply className="w-4 h-4" />
+                                                                    Reply
+                                                                </button>
+                                                            )}
 
-                                                    {user && reply.author?._id === user._id && (
-                                                        <button
-                                                            onClick={() => handleDelete(reply._id)}
-                                                            className="text-sm text-red-600 hover:text-red-700 transition"
-                                                        >
-                                                            Delete
-                                                        </button>
-                                                    )}
-                                                </div>
+                                                            {user && reply.author?._id === user._id && (
+                                                                <>
+                                                                    <button
+                                                                        onClick={() => handleEdit(reply)}
+                                                                        className="text-sm text-indigo-600 hover:text-indigo-700 transition"
+                                                                    >
+                                                                        Edit
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => handleDelete(reply._id)}
+                                                                        className="text-sm text-red-600 hover:text-red-700 transition"
+                                                                    >
+                                                                        Delete
+                                                                    </button>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    </>
+                                                )}
                                             </div>
                                         </div>
                                     ))}

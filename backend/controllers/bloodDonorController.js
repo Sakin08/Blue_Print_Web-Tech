@@ -175,6 +175,44 @@ export const createBloodRequest = async (req, res) => {
       "name email profilePicture department batch"
     );
 
+    // Broadcast notification to all users
+    try {
+      const User = (await import("../models/User.js")).default;
+      const Notification = (await import("../models/Notification.js")).default;
+
+      const allUsers = await User.find({ _id: { $ne: req.user._id } }).select(
+        "_id"
+      );
+
+      const urgencyEmoji =
+        urgency === "critical" ? "🚨" : urgency === "high" ? "⚠️" : "🩸";
+      const notifications = allUsers.map((user) => ({
+        recipient: user._id,
+        sender: req.user._id,
+        type: "blood_request",
+        title: `${urgencyEmoji} Urgent Blood Request: ${bloodGroup}`,
+        message: `${message.substring(0, 100)}... Location: ${location}`,
+        link: `/blood-donation/request/${request._id}`,
+      }));
+
+      if (notifications.length > 0) {
+        await Notification.insertMany(notifications);
+
+        // Emit socket event to all users
+        const io = req.app.get("io");
+        if (io) {
+          allUsers.forEach((user) => {
+            io.to(`user_${user._id}`).emit("notification", {
+              type: "blood_request",
+              message: `Urgent: ${bloodGroup} blood needed at ${location}`,
+            });
+          });
+        }
+      }
+    } catch (notifError) {
+      console.error("Failed to send broadcast notifications:", notifError);
+    }
+
     res.status(201).json(request);
   } catch (error) {
     res.status(500).json({ message: error.message });

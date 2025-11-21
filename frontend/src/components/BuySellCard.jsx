@@ -1,9 +1,9 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { canDelete } from "../utils/permissions";
 import PosterInfo from "./PosterInfo";
 import SaveButton from "./SaveButton";
-import { MapPin, Eye, Camera } from "lucide-react";
+import { MapPin, Eye, Camera, Edit } from "lucide-react";
 
 const BuySellCard = ({ post, onDelete }) => {
     const navigate = useNavigate();
@@ -116,24 +116,38 @@ const BuySellCard = ({ post, onDelete }) => {
                         <span className="ml-1">views</span>
                     </div>
 
-                    {/* Delete Button - Enhanced */}
+                    {/* Edit & Delete Buttons - Enhanced */}
                     {showDelete && (
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                if (window.confirm("Delete this post?")) {
-                                    onDelete(post._id);
-                                }
-                            }}
-                            className="
-                                text-red-600 px-4 py-2 rounded-lg border border-red-200
-                                hover:bg-red-600 hover:text-white hover:border-red-600
-                                transition-all duration-200 text-xs font-semibold
-                                hover:shadow-md active:scale-95
-                            "
-                        >
-                            Delete
-                        </button>
+                        <div className="flex gap-2">
+                            <Link
+                                to={`/buysell/edit/${post._id}`}
+                                onClick={(e) => e.stopPropagation()}
+                                className="
+                                    text-indigo-600 px-4 py-2 rounded-lg border border-indigo-200
+                                    hover:bg-indigo-600 hover:text-white hover:border-indigo-600
+                                    transition-all duration-200 text-xs font-semibold
+                                    hover:shadow-md active:scale-95
+                                "
+                            >
+                                Edit
+                            </Link>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (window.confirm("Delete this post?")) {
+                                        onDelete(post._id);
+                                    }
+                                }}
+                                className="
+                                    text-red-600 px-4 py-2 rounded-lg border border-red-200
+                                    hover:bg-red-600 hover:text-white hover:border-red-600
+                                    transition-all duration-200 text-xs font-semibold
+                                    hover:shadow-md active:scale-95
+                                "
+                            >
+                                Delete
+                            </button>
+                        </div>
                     )}
                 </div>
             </div>

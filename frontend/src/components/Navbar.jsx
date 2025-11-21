@@ -160,7 +160,18 @@ const Navbar = () => {
   // Check if user has "other" role - they only see food delivery and blood donation
   const isOtherRole = user?.role === 'other';
 
-  const menuItems = isOtherRole ? {
+  // Define menu items based on user authentication and role
+  const menuItems = !user ? {
+    // Non-logged-in users see only Events, Blood Donation, and Lost & Found
+    public: {
+      title: "Public Access",
+      items: [
+        { to: '/events', Icon: Calendar, text: 'Events' },
+        { to: '/blood-donation', Icon: Droplet, text: 'Blood Donation' },
+        { to: '/lost-found', Icon: Search, text: 'Lost & Found' },
+      ]
+    }
+  } : isOtherRole ? {
     // Limited menu for "other" role users
     services: {
       title: "Services",

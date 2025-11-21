@@ -8,6 +8,9 @@ export default {
     api.post("/buysell", data, {
       headers: { "Content-Type": "multipart/form-data" },
     }),
-  update: (id, data) => api.put(`/buysell/${id}`, data),
+  update: (id, data) =>
+    api.put(`/buysell/${id}`, data, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
   remove: (id) => api.delete(`/buysell/${id}`),
 };

@@ -6,6 +6,7 @@ import {
   getLostFoundById,
   claimItem,
   updateItemStatus,
+  updateLostFound,
   deleteLostFound,
 } from "../controllers/lostFoundController.js";
 
@@ -16,6 +17,7 @@ router.get("/", getLostFoundItems);
 router.get("/:id", getLostFoundById);
 router.post("/:id/claim", protect, claimItem);
 router.patch("/:id/status", protect, updateItemStatus);
+router.put("/:id", protect, updateLostFound);
 router.delete("/:id", protect, deleteLostFound);
 
 export default router;

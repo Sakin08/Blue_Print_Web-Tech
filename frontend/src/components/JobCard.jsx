@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { canDelete } from '../utils/permissions';
 import PosterInfo from './PosterInfo';
+import { Edit } from 'lucide-react';
 
 const JobCard = ({ job, onDelete }) => {
     const { user } = useAuth();
@@ -90,19 +91,29 @@ const JobCard = ({ job, onDelete }) => {
                             )}
                         </div>
 
-                        {/* Delete Button */}
+                        {/* Edit & Delete Buttons */}
                         {showDelete && (
-                            <button
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    if (window.confirm('Are you sure you want to delete this job posting?')) {
-                                        onDelete(job._id);
-                                    }
-                                }}
-                                className="text-red-600 hover:bg-red-600 hover:text-white px-3 py-2 rounded-lg border border-red-200 transition-all duration-200 text-sm font-semibold mt-4"
-                            >
-                                Delete
-                            </button>
+                            <div className="flex flex-col gap-2 mt-4">
+                                <Link
+                                    to={`/jobs/edit/${job._id}`}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="text-indigo-600 hover:bg-indigo-600 hover:text-white px-3 py-2 rounded-lg border border-indigo-200 transition-all duration-200 text-sm font-semibold text-center flex items-center justify-center gap-1"
+                                >
+                                    <Edit size={14} />
+                                    Edit
+                                </Link>
+                                <button
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        if (window.confirm('Are you sure you want to delete this job posting?')) {
+                                            onDelete(job._id);
+                                        }
+                                    }}
+                                    className="text-red-600 hover:bg-red-600 hover:text-white px-3 py-2 rounded-lg border border-red-200 transition-all duration-200 text-sm font-semibold"
+                                >
+                                    Delete
+                                </button>
+                            </div>
                         )}
                     </div>
                 </div>

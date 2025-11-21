@@ -45,6 +45,12 @@ export const updateProfile = async (req, res) => {
       coursesTaught,
     } = req.body;
 
+    console.log("Update profile request:", {
+      userId: req.user._id,
+      username,
+      name,
+    });
+
     const updateData = {};
 
     // Mandatory fields (can be updated)
@@ -55,7 +61,11 @@ export const updateProfile = async (req, res) => {
     if (bio !== undefined) updateData.bio = bio;
     if (interests !== undefined) updateData.interests = interests;
     if (phone !== undefined) updateData.phone = phone;
-    if (username !== undefined) updateData.username = username;
+    // Handle username - convert empty string to null for sparse unique index
+    if (username !== undefined) {
+      updateData.username =
+        username && username.trim() ? username.trim() : null;
+    }
     if (gender !== undefined) updateData.gender = gender;
     if (dateOfBirth !== undefined) updateData.dateOfBirth = dateOfBirth;
     if (emergencyContact !== undefined)
@@ -67,6 +77,8 @@ export const updateProfile = async (req, res) => {
       updateData.coursesEnrolled = coursesEnrolled;
     if (coursesTaught !== undefined) updateData.coursesTaught = coursesTaught;
 
+    console.log("Update data:", updateData);
+
     const user = await User.findByIdAndUpdate(req.user._id, updateData, {
       new: true,
       runValidators: true,
@@ -76,8 +88,19 @@ export const updateProfile = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
+    console.log("Profile updated successfully");
     res.json(user);
   } catch (error) {
+    console.error("Update profile error:", error);
+    console.error("Error details:", {
+      code: error.code,
+      name: error.name,
+      message: error.message,
+    });
+    if (error.name === "ValidationError") {
+      const messages = Object.values(error.errors).map((err) => err.message);
+      return res.status(400).json({ message: messages.join(", ") });
+    }
     res.status(500).json({ message: error.message });
   }
 };

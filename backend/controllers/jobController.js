@@ -117,6 +117,83 @@ export const applyToJob = async (req, res) => {
   }
 };
 
+export const updateJob = [
+  upload.array("images", 5),
+  async (req, res) => {
+    try {
+      const job = await Job.findById(req.params.id);
+      if (!job) return res.status(404).json({ message: "Job not found" });
+      if (job.poster.toString() !== req.user._id.toString()) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      const {
+        title,
+        company,
+        description,
+        type,
+        location,
+        salary,
+        duration,
+        requirements,
+        applicationDeadline,
+        contactEmail,
+        contactPhone,
+        applicationLink,
+        skills,
+        existingImages,
+      } = req.body;
+
+      // Parse existing images
+      const parsedExistingImages = existingImages
+        ? JSON.parse(existingImages)
+        : job.images || [];
+
+      // Handle new image uploads
+      let newImageUrls = [];
+      if (req.files && req.files.length > 0) {
+        newImageUrls = await Promise.all(
+          req.files.map((file) => uploadImage(file))
+        );
+      }
+
+      // Combine existing and new images
+      const allImages = [...parsedExistingImages, ...newImageUrls];
+
+      // Update job data
+      const updateData = {
+        title: title || job.title,
+        company: company || job.company,
+        description: description || job.description,
+        type: type || job.type,
+        location: location || job.location,
+        salary: salary || job.salary,
+        duration: duration || job.duration,
+        requirements: requirements || job.requirements,
+        applicationDeadline: applicationDeadline || job.applicationDeadline,
+        contactEmail: contactEmail || job.contactEmail,
+        contactPhone: contactPhone || job.contactPhone,
+        applicationLink: applicationLink || job.applicationLink,
+        skills: skills ? JSON.parse(skills) : job.skills,
+        images: allImages,
+      };
+
+      Object.assign(job, updateData);
+      await job.save();
+
+      await job.populate(
+        "poster",
+        "name email profilePicture department batch isStudentVerified"
+      );
+
+      res.json(job);
+    } catch (error) {
+      console.error("Update job error:", error);
+      res.status(500).json({ message: error.message });
+    }
+  },
+];
+
 export const deleteJob = async (req, res) => {
   try {
     const job = await Job.findById(req.params.id);

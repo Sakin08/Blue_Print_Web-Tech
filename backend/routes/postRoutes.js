@@ -8,6 +8,7 @@ import {
   deletePost,
   toggleLike,
   addComment,
+  updateComment,
   deleteComment,
   sharePost,
   toggleSave,
@@ -33,6 +34,7 @@ router.delete("/:id", protect, deletePost);
 // Interactions
 router.post("/:id/like", protect, toggleLike);
 router.post("/:id/comment", protect, addComment);
+router.put("/:id/comment/:commentId", protect, updateComment);
 router.delete("/:id/comment/:commentId", protect, deleteComment);
 router.post("/:id/share", protect, sharePost);
 router.post("/:id/save", protect, toggleSave);

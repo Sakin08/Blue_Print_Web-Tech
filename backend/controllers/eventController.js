@@ -163,6 +163,108 @@ export const markInterested = async (req, res) => {
   }
 };
 
+export const updateEvent = [
+  upload.array("images", 5),
+  async (req, res) => {
+    try {
+      const event = await Event.findById(req.params.id);
+      if (!event) return res.status(404).json({ message: "Event not found" });
+      if (event.user.toString() !== req.user._id.toString()) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      const {
+        title,
+        description,
+        date,
+        location,
+        capacity,
+        requiresRSVP,
+        waitlistEnabled,
+        category,
+        tags,
+        coordinates,
+        existingImages,
+      } = req.body;
+
+      // Parse existing images
+      const parsedExistingImages = existingImages
+        ? JSON.parse(existingImages)
+        : event.images || [];
+
+      // Handle new image uploads
+      let newImageUrls = [];
+      if (req.files && req.files.length > 0) {
+        newImageUrls = await Promise.all(
+          req.files.map((file) => uploadImage(file))
+        );
+      }
+
+      // Combine existing and new images
+      const allImages = [...parsedExistingImages, ...newImageUrls];
+
+      // Update event data
+      const updateData = {
+        title: title || event.title,
+        description: description || event.description,
+        date: date || event.date,
+        location: location || event.location,
+        capacity: capacity !== undefined ? parseInt(capacity) : event.capacity,
+        requiresRSVP:
+          requiresRSVP !== undefined
+            ? requiresRSVP === "true"
+            : event.requiresRSVP,
+        waitlistEnabled:
+          waitlistEnabled !== undefined
+            ? waitlistEnabled === "true"
+            : event.waitlistEnabled,
+        category: category || event.category,
+        images: allImages,
+      };
+
+      // Parse coordinates if provided
+      if (coordinates) {
+        try {
+          updateData.coordinates = JSON.parse(coordinates);
+        } catch (e) {
+          console.error("Failed to parse coordinates:", e);
+        }
+      }
+
+      // Parse tags if provided
+      if (tags) {
+        try {
+          updateData.tags = JSON.parse(tags);
+        } catch (e) {
+          console.error("Failed to parse tags:", e);
+        }
+      }
+
+      Object.assign(event, updateData);
+      await event.save();
+
+      await event.populate(
+        "user",
+        "name email profilePicture department batch isStudentVerified"
+      );
+
+      // Emit real-time event update
+      const io = req.app.get("io");
+      if (io) {
+        io.to("events").emit("eventUpdate", {
+          type: "updated",
+          data: event,
+        });
+      }
+
+      res.json(event);
+    } catch (error) {
+      console.error("Update event error:", error);
+      res.status(500).json({ message: error.message });
+    }
+  },
+];
+
 export const deleteEvent = async (req, res) => {
   try {
     const event = await Event.findById(req.params.id);

@@ -9,7 +9,7 @@ import PosterInfo from '../components/PosterInfo.jsx';
 import DeleteButton from '../components/DeleteButton.jsx';
 import CommentsSection from '../components/CommentsSection.jsx';
 import {
-  MapPin, Eye, ArrowLeft, Phone, Mail, DollarSign, Tag, MessageCircle, ShoppingBag
+  MapPin, Eye, ArrowLeft, Phone, Mail, Tag, MessageCircle, ShoppingBag, Edit
 } from 'lucide-react';
 
 const BuySellDetails = () => {
@@ -204,6 +204,13 @@ const BuySellDetails = () => {
 
               {isOwnPost && (
                 <div className="mt-4 space-y-2">
+                  <Link
+                    to={`/buysell/edit/${post._id}`}
+                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Edit className="w-4 h-4" />
+                    Edit Post
+                  </Link>
                   <div className="bg-gray-100 border border-gray-300 rounded-lg p-3 text-center">
                     <p className="text-sm text-gray-600 mb-2">This is your post</p>
                   </div>

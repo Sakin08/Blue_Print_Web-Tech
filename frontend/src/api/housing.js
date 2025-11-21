@@ -7,6 +7,9 @@ export default {
     api.post("/housing", data, {
       headers: { "Content-Type": "multipart/form-data" },
     }),
-  update: (id, data) => api.put(`/housing/${id}`, data),
+  update: (id, data) =>
+    api.put(`/housing/${id}`, data, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
   remove: (id) => api.delete(`/housing/${id}`),
 };

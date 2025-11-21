@@ -7,8 +7,8 @@ import PosterInfo from '../components/PosterInfo';
 import MessageButton from '../components/MessageButton';
 import FavoriteButton from '../components/FavoriteButton';
 import {
-    ArrowLeft, MapPin, DollarSign, Clock, Eye, Mail, Phone,
-    ExternalLink, Briefcase, Calendar, Tag, MessageCircle, Trash2, CheckCircle
+    ArrowLeft, MapPin, Clock, Eye, Mail, Phone,
+    ExternalLink, Briefcase, Calendar, Tag, MessageCircle, Trash2, CheckCircle, Edit
 } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
@@ -295,7 +295,7 @@ const JobDetails = () => {
                             {/* Action Buttons */}
                             <div className="mt-4 space-y-2">
                                 {/* Apply Button */}
-                                {user && !isOwner && !hasApplied && (
+                                {/* {user && !isOwner && !hasApplied && (
                                     <button
                                         onClick={handleApply}
                                         className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-lg font-semibold transition flex items-center justify-center gap-2"
@@ -303,7 +303,7 @@ const JobDetails = () => {
                                         <CheckCircle className="w-4 h-4" />
                                         Apply Now
                                     </button>
-                                )}
+                                )} */}
 
                                 {user && !isOwner && hasApplied && (
                                     <button
@@ -342,6 +342,13 @@ const JobDetails = () => {
                                 {/* Owner Actions */}
                                 {isOwner && (
                                     <>
+                                        <Link
+                                            to={`/jobs/edit/${job._id}`}
+                                            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition"
+                                        >
+                                            <Edit size={16} />
+                                            Edit Job
+                                        </Link>
                                         <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-center">
                                             <p className="text-sm text-blue-800">This is your post</p>
                                         </div>

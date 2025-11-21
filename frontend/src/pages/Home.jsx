@@ -70,9 +70,11 @@ const Home = () => {
         { icon: ShoppingBag, title: 'Campus Eats', desc: 'Order food from campus restaurants', link: '/restaurants', color: 'from-yellow-500 to-orange-500', bg: 'bg-yellow-50', allowedRoles: ['student', 'teacher', 'admin', 'other'] }
     ];
 
-    const quickAccessFeatures = isOtherRole
-        ? allFeatures.filter(f => f.allowedRoles.includes('other'))
-        : allFeatures.filter(f => !f.allowedRoles || f.allowedRoles.includes(user?.role || 'student'));
+    const quickAccessFeatures = !user
+        ? allFeatures.filter(f => ['Events', 'Blood Donation', 'Lost & Found'].includes(f.title))
+        : isOtherRole
+            ? allFeatures.filter(f => f.allowedRoles.includes('other'))
+            : allFeatures.filter(f => !f.allowedRoles || f.allowedRoles.includes(user?.role || 'student'));
 
     const allCategories = [
         { name: 'Events', icon: '�', link: '/events', allowedRoles: ['student', 'teacher', 'admin'] },
@@ -84,9 +86,11 @@ const Home = () => {
         { name: 'Lost & Found', icon: '🔍', link: '/lost-found', allowedRoles: ['student', 'teacher', 'admin'] }
     ];
 
-    const categories = isOtherRole
-        ? allCategories.filter(c => c.allowedRoles.includes('other'))
-        : allCategories.filter(c => !c.allowedRoles || c.allowedRoles.includes(user?.role || 'student'));
+    const categories = !user
+        ? allCategories.filter(c => ['Events', 'Blood Donation', 'Lost & Found'].includes(c.name))
+        : isOtherRole
+            ? allCategories.filter(c => c.allowedRoles.includes('other'))
+            : allCategories.filter(c => !c.allowedRoles || c.allowedRoles.includes(user?.role || 'student'));
 
     const whyChoose = [
         { icon: Zap, title: 'All-in-One', desc: 'One unified platform for everything at SUST.' },
@@ -201,8 +205,8 @@ const Home = () => {
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        {/* Trending Post */}
-                        {trendingPost && (
+                        {/* Trending Post - Only for logged-in users */}
+                        {user && trendingPost && (
                             <Link to={`/post/${trendingPost._id}`} className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition cursor-pointer block">
                                 <div className="flex items-center gap-2 text-orange-600 font-semibold mb-4">
                                     <TrendingUp className="w-5 h-5" />

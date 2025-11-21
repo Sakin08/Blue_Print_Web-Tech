@@ -10,7 +10,7 @@ import CommentsSection from '../components/CommentsSection.jsx';
 import {
     Home, MapPin, Calendar, Users, Phone, Mail,
     Wifi, Zap, Droplet, Car, Shield, Sofa, Wind, CheckCircle,
-    Eye, ArrowLeft, MessageCircle, Building
+    Eye, ArrowLeft, MessageCircle, Building, Edit
 } from 'lucide-react';
 
 const HousingDetails = () => {
@@ -317,8 +317,17 @@ const HousingDetails = () => {
                             )}
 
                             {isOwnPost && (
-                                <div className="mt-4 bg-gray-100 border border-gray-300 rounded-lg p-3 text-center">
-                                    <p className="text-sm text-gray-600">This is your post</p>
+                                <div className="mt-4 space-y-2">
+                                    <Link
+                                        to={`/housing/edit/${post._id}`}
+                                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                                    >
+                                        <Edit className="w-4 h-4" />
+                                        Edit Post
+                                    </Link>
+                                    <div className="bg-gray-100 border border-gray-300 rounded-lg p-3 text-center">
+                                        <p className="text-sm text-gray-600">This is your post</p>
+                                    </div>
                                 </div>
                             )}
 

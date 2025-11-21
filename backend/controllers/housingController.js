@@ -122,16 +122,111 @@ export const getHousingById = async (req, res) => {
   }
 };
 
-export const updateHousing = async (req, res) => {
-  const post = await HousingPost.findById(req.params.id);
-  if (!post) return res.status(404).json({ message: "Not found" });
-  if (post.user.toString() !== req.user._id.toString()) {
-    return res.status(403).json({ message: "Not authorized" });
-  }
-  Object.assign(post, req.body);
-  await post.save();
-  res.json(post);
-};
+export const updateHousing = [
+  upload.array("images", 5),
+  async (req, res) => {
+    try {
+      const post = await HousingPost.findById(req.params.id);
+      if (!post) return res.status(404).json({ message: "Not found" });
+      if (post.user.toString() !== req.user._id.toString()) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      const {
+        postType,
+        housingType,
+        title,
+        location,
+        address,
+        rent,
+        maxBudget,
+        availableFrom,
+        totalSeats,
+        availableSeats,
+        totalRooms,
+        genderPreference,
+        preferredTenant,
+        facilities,
+        floorNumber,
+        distanceFromCampus,
+        advanceDeposit,
+        negotiable,
+        utilitiesIncluded,
+        description,
+        phone,
+        preferredContact,
+        existingImages,
+      } = req.body;
+
+      // Parse JSON fields
+      const parsedFacilities = facilities
+        ? JSON.parse(facilities)
+        : post.facilities;
+      const parsedExistingImages = existingImages
+        ? JSON.parse(existingImages)
+        : post.images;
+
+      // Handle new image uploads
+      let newImageUrls = [];
+      if (req.files && req.files.length > 0) {
+        newImageUrls = await Promise.all(
+          req.files.map((file) => uploadImage(file))
+        );
+      }
+
+      // Combine existing and new images
+      const allImages = [...parsedExistingImages, ...newImageUrls];
+
+      // Update post data
+      const updateData = {
+        postType: postType || post.postType,
+        housingType: housingType || post.housingType,
+        title: title || post.title,
+        location: location || post.location,
+        address: address || post.address,
+        rent:
+          postType === "available" ? rent || post.rent : maxBudget || post.rent,
+        availableFrom: availableFrom || post.availableFrom,
+        genderPreference: genderPreference || post.genderPreference,
+        preferredTenant: preferredTenant || post.preferredTenant,
+        facilities: parsedFacilities,
+        description: description || post.description,
+        phone: phone || post.phone,
+        preferredContact: preferredContact || post.preferredContact,
+        images: allImages,
+      };
+
+      // Add optional fields
+      if (totalSeats !== undefined) updateData.totalSeats = totalSeats;
+      if (availableSeats !== undefined)
+        updateData.availableSeats = availableSeats;
+      if (totalRooms !== undefined) updateData.totalRooms = totalRooms;
+      if (floorNumber !== undefined) updateData.floorNumber = floorNumber;
+      if (distanceFromCampus !== undefined)
+        updateData.distanceFromCampus = distanceFromCampus;
+      if (advanceDeposit !== undefined)
+        updateData.advanceDeposit = advanceDeposit;
+      if (negotiable !== undefined)
+        updateData.negotiable = negotiable === "true" || negotiable === true;
+      if (utilitiesIncluded !== undefined)
+        updateData.utilitiesIncluded =
+          utilitiesIncluded === "true" || utilitiesIncluded === true;
+
+      Object.assign(post, updateData);
+      await post.save();
+
+      await post.populate(
+        "user",
+        "name email profilePicture department batch isStudentVerified"
+      );
+
+      res.json(post);
+    } catch (error) {
+      console.error("Housing update error:", error);
+      res.status(500).json({ message: error.message });
+    }
+  },
+];
 
 export const deleteHousing = async (req, res) => {
   const post = await HousingPost.findById(req.params.id);

@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { canDelete } from '../utils/permissions';
 import PosterInfo from './PosterInfo';
 import SaveButton from './SaveButton';
-import { MapPin, Phone, UserPlus, Camera, Home, Trash2, ArrowRight } from 'lucide-react'; // Suggested icons
+import { MapPin, Phone, UserPlus, Camera, Home, Trash2, ArrowRight, Edit } from 'lucide-react'; // Suggested icons
 
 const HousingCard = ({ post, onDelete }) => {
     const { user: currentUser } = useAuth();
@@ -112,20 +112,30 @@ const HousingCard = ({ post, onDelete }) => {
                         </a>
                     )}
 
-                    {/* Delete Button */}
+                    {/* Edit & Delete Buttons */}
                     {showDelete && (
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                if (window.confirm('Are you sure you want to delete this housing post?')) {
-                                    onDelete(post._id);
-                                }
-                            }}
-                            className="text-red-600 hover:text-white hover:bg-red-500 px-3 py-1 rounded-md text-xs font-semibold transition"
-                        >
-                            <Trash2 size={14} className="inline-block mr-1" />
-                            Delete
-                        </button>
+                        <div className="flex gap-2">
+                            <Link
+                                to={`/housing/edit/${post._id}`}
+                                onClick={(e) => e.stopPropagation()}
+                                className="text-indigo-600 hover:text-white hover:bg-indigo-500 px-3 py-1 rounded-md text-xs font-semibold transition"
+                            >
+                                <Edit size={14} className="inline-block mr-1" />
+                                Edit
+                            </Link>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (window.confirm('Are you sure you want to delete this housing post?')) {
+                                        onDelete(post._id);
+                                    }
+                                }}
+                                className="text-red-600 hover:text-white hover:bg-red-500 px-3 py-1 rounded-md text-xs font-semibold transition"
+                            >
+                                <Trash2 size={14} className="inline-block mr-1" />
+                                Delete
+                            </button>
+                        </div>
                     )}
                 </div>
             </div>

@@ -1,29 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
-import L from 'leaflet';
 import api from '../api/axios.js';
 import ProtectedRoute from '../components/ProtectedRoute.jsx';
-import 'leaflet/dist/leaflet.css';
-
-// Fix marker icon
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-    iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
-
-// Component to handle map clicks
-const LocationPicker = ({ position, setPosition }) => {
-    useMapEvents({
-        click(e) {
-            setPosition([e.latlng.lat, e.latlng.lng]);
-        },
-    });
-
-    return position ? <Marker position={position} /> : null;
-};
 
 const CreateEvent = () => {
     const [formData, setFormData] = useState({
@@ -37,11 +15,7 @@ const CreateEvent = () => {
         category: 'other',
         tags: ''
     });
-    const [coordinates, setCoordinates] = useState(null);
-    const [showMap, setShowMap] = useState(false);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [searchResults, setSearchResults] = useState([]);
-    const [searching, setSearching] = useState(false);
+
     const [images, setImages] = useState([]);
     const [imagePreviews, setImagePreviews] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -53,56 +27,7 @@ const CreateEvent = () => {
         setError('');
     };
 
-    const handleSearchLocation = async () => {
-        if (!searchQuery.trim()) return;
 
-        setSearching(true);
-        try {
-            const response = await fetch(
-                `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=5`
-            );
-            const data = await response.json();
-            setSearchResults(data);
-        } catch (err) {
-            console.error('Search failed:', err);
-            alert('Failed to search location');
-        }
-        setSearching(false);
-    };
-
-    const handleSelectLocation = (result) => {
-        const lat = parseFloat(result.lat);
-        const lng = parseFloat(result.lon);
-        setCoordinates([lat, lng]);
-        setFormData({ ...formData, location: result.display_name });
-        setSearchResults([]);
-        setSearchQuery('');
-    };
-
-    const handleUseCurrentLocation = () => {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const { latitude, longitude } = position.coords;
-                    setCoordinates([latitude, longitude]);
-                    // Reverse geocode to get address
-                    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`)
-                        .then(res => res.json())
-                        .then(data => {
-                            if (data.display_name) {
-                                setFormData({ ...formData, location: data.display_name });
-                            }
-                        })
-                        .catch(err => console.error('Reverse geocoding failed:', err));
-                },
-                (error) => {
-                    alert('Unable to get your location. Please enable location services.');
-                }
-            );
-        } else {
-            alert('Geolocation is not supported by your browser');
-        }
-    };
 
     const handleImageChange = (e) => {
         const files = Array.from(e.target.files);
@@ -239,111 +164,7 @@ const CreateEvent = () => {
                                     placeholder="e.g., SUST Auditorium, Room 301"
                                 />
 
-                                {/* Quick Actions */}
-                                <div className="mt-2 flex flex-wrap gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowMap(!showMap)}
-                                        className="text-sm text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1 px-3 py-1 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition"
-                                    >
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                                        </svg>
-                                        {showMap ? 'Hide Map' : 'Show Map'}
-                                    </button>
 
-                                    <button
-                                        type="button"
-                                        onClick={handleUseCurrentLocation}
-                                        className="text-sm text-green-600 hover:text-green-700 font-medium flex items-center gap-1 px-3 py-1 bg-green-50 rounded-lg hover:bg-green-100 transition"
-                                    >
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        </svg>
-                                        Use My Location
-                                    </button>
-                                </div>
-
-                                {showMap && (
-                                    <div className="mt-3 border border-gray-300 rounded-lg overflow-hidden">
-                                        {/* Location Search */}
-                                        <div className="bg-gray-50 p-3 border-b border-gray-200">
-                                            <div className="flex gap-2">
-                                                <input
-                                                    type="text"
-                                                    value={searchQuery}
-                                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleSearchLocation())}
-                                                    placeholder="Search for a place (e.g., SUST Library, Sylhet)"
-                                                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={handleSearchLocation}
-                                                    disabled={searching || !searchQuery.trim()}
-                                                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                                                >
-                                                    {searching ? '...' : '🔍'}
-                                                </button>
-                                            </div>
-
-                                            {/* Search Results */}
-                                            {searchResults.length > 0 && (
-                                                <div className="mt-2 bg-white border border-gray-200 rounded-lg max-h-48 overflow-y-auto">
-                                                    {searchResults.map((result, idx) => (
-                                                        <button
-                                                            key={idx}
-                                                            type="button"
-                                                            onClick={() => handleSelectLocation(result)}
-                                                            className="w-full text-left px-3 py-2 hover:bg-indigo-50 border-b border-gray-100 last:border-0 transition"
-                                                        >
-                                                            <div className="flex items-start gap-2">
-                                                                <span className="text-indigo-600 mt-0.5">📍</span>
-                                                                <div className="flex-1 min-w-0">
-                                                                    <p className="text-sm font-medium text-gray-900 truncate">{result.display_name}</p>
-                                                                    <p className="text-xs text-gray-500">{result.type}</p>
-                                                                </div>
-                                                            </div>
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div className="bg-blue-50 px-3 py-2 text-sm text-blue-700">
-                                            💡 Search for a place above or click on the map to set location
-                                        </div>
-
-                                        <MapContainer
-                                            center={coordinates || [24.9158, 91.8708]}
-                                            zoom={coordinates ? 16 : 15}
-                                            style={{ height: '350px', width: '100%' }}
-                                        >
-                                            <TileLayer
-                                                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                                                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                                            />
-                                            <LocationPicker position={coordinates} setPosition={setCoordinates} />
-                                        </MapContainer>
-
-                                        {coordinates && (
-                                            <div className="bg-green-50 px-3 py-2 text-sm text-green-700 flex items-center justify-between">
-                                                <div className="flex items-center gap-2">
-                                                    <span>✓ Location pinned:</span>
-                                                    <span className="text-xs font-mono">{coordinates[0].toFixed(5)}, {coordinates[1].toFixed(5)}</span>
-                                                </div>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setCoordinates(null)}
-                                                    className="text-red-600 hover:text-red-700 font-medium"
-                                                >
-                                                    Clear
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
                             </div>
 
                             {/* Category */}

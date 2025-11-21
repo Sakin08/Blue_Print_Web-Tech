@@ -4,7 +4,7 @@ import chatApi from '../api/chat.js';
 import { useSocket } from '../context/SocketContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 // Importing Lucide icons for a modern, consistent look
-import { Search, Send, Paperclip, X, User, MessageSquare, Image, File, CheckCheck } from 'lucide-react';
+import { Search, Send, Paperclip, X, User, MessageSquare, Image, File, CheckCheck, MoreVertical, Trash2 } from 'lucide-react';
 
 const Messages = () => {
     // --- State and Context (LOGIC UNCHANGED) ---
@@ -18,6 +18,8 @@ const Messages = () => {
     const [selectedFile, setSelectedFile] = useState(null);
     const [uploading, setUploading] = useState(false);
     const [onlineUsers, setOnlineUsers] = useState(new Set());
+    const [showChatMenu, setShowChatMenu] = useState(false);
+    const [showChatListMenu, setShowChatListMenu] = useState(null);
 
     const { socket } = useSocket();
     const { user } = useAuth();
@@ -179,6 +181,62 @@ const Messages = () => {
         }
     };
 
+    const handleDeleteChat = async () => {
+        if (!selectedChat) return;
+
+        const confirmDelete = window.confirm(
+            `Are you sure you want to delete this entire conversation with ${selectedChat.otherUser.name}? This action cannot be undone.`
+        );
+
+        if (!confirmDelete) return;
+
+        try {
+            await chatApi.deleteChat(selectedChat.otherUser._id);
+
+            // Remove chat from list
+            setChats(prev => prev.filter(chat => chat.chatId !== selectedChat.chatId));
+
+            // Clear selected chat
+            setSelectedChat(null);
+            setMessages([]);
+            setShowChatMenu(false);
+
+            alert('Chat deleted successfully');
+        } catch (err) {
+            console.error('Failed to delete chat:', err);
+            alert('Failed to delete chat');
+        }
+    };
+
+    const handleDeleteChatFromList = async (chat, e) => {
+        e.stopPropagation(); // Prevent opening the chat
+
+        const confirmDelete = window.confirm(
+            `Are you sure you want to delete this entire conversation with ${chat.otherUser.name}? This action cannot be undone.`
+        );
+
+        if (!confirmDelete) return;
+
+        try {
+            await chatApi.deleteChat(chat.otherUser._id);
+
+            // Remove chat from list
+            setChats(prev => prev.filter(c => c.chatId !== chat.chatId));
+
+            // If this was the selected chat, clear it
+            if (selectedChat?.chatId === chat.chatId) {
+                setSelectedChat(null);
+                setMessages([]);
+            }
+
+            setShowChatListMenu(null);
+            alert('Chat deleted successfully');
+        } catch (err) {
+            console.error('Failed to delete chat:', err);
+            alert('Failed to delete chat');
+        }
+    };
+
     const uploadFile = async (file) => {
         const formData = new FormData();
         formData.append('file', file);
@@ -308,46 +366,84 @@ const Messages = () => {
                     ) : (
                         <div>
                             {filteredChats.map(chat => (
-                                <button
+                                <div
                                     key={chat.chatId}
-                                    onClick={() => setSelectedChat(chat)}
-                                    className={`w-full p-4 border-b border-gray-100 transition text-left 
+                                    className={`relative group border-b border-gray-100 transition
                                         ${selectedChat?.chatId === chat.chatId ? 'bg-indigo-50 border-l-4 border-indigo-600' : 'hover:bg-gray-50'
                                         }`}
                                 >
-                                    <div className="flex items-center gap-3">
-                                        <div className="relative flex-shrink-0">
-                                            {chat.otherUser.profilePicture ? (
-                                                <img
-                                                    src={chat.otherUser.profilePicture.startsWith('http') ? chat.otherUser.profilePicture : `http://localhost:5001${chat.otherUser.profilePicture}`}
-                                                    alt={chat.otherUser.name}
-                                                    className="w-12 h-12 rounded-full object-cover border border-gray-200"
-                                                />
-                                            ) : (
-                                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-white font-bold text-lg">
-                                                    {getInitials(chat.otherUser.name)}
+                                    <button
+                                        onClick={() => setSelectedChat(chat)}
+                                        className="w-full p-4 text-left"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="relative flex-shrink-0">
+                                                {chat.otherUser.profilePicture ? (
+                                                    <img
+                                                        src={chat.otherUser.profilePicture.startsWith('http') ? chat.otherUser.profilePicture : `http://localhost:5001${chat.otherUser.profilePicture}`}
+                                                        alt={chat.otherUser.name}
+                                                        className="w-12 h-12 rounded-full object-cover border border-gray-200"
+                                                    />
+                                                ) : (
+                                                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-white font-bold text-lg">
+                                                        {getInitials(chat.otherUser.name)}
+                                                    </div>
+                                                )}
+                                                {onlineUsers.has(chat.otherUser._id) && (
+                                                    <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+                                                )}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex justify-between items-start mb-0.5">
+                                                    <h3 className="font-semibold text-gray-900 truncate mr-2">{chat.otherUser.name}</h3>
+                                                    <span className="text-xs text-gray-500 flex-shrink-0">{formatTime(chat.lastMessageTime)}</span>
+                                                </div>
+                                                <p className="text-sm text-gray-600 truncate">
+                                                    {chat.lastMessage || (chat.lastMessageType === 'image' ? 'Image 🖼️' : 'File 📎')}
+                                                </p>
+                                            </div>
+                                            {chat.unreadCount > 0 && (
+                                                <div className="bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold flex-shrink-0 ml-2">
+                                                    {chat.unreadCount}
                                                 </div>
                                             )}
-                                            {onlineUsers.has(chat.otherUser._id) && (
-                                                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+                                        </div>
+                                    </button>
+
+                                    {/* Delete button - shows on hover */}
+                                    <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto">
+                                        <div className="relative">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setShowChatListMenu(showChatListMenu === chat.chatId ? null : chat.chatId);
+                                                }}
+                                                className="p-2 text-gray-600 hover:bg-gray-200 rounded-full transition cursor-pointer"
+                                                title="Chat options"
+                                            >
+                                                <MoreVertical size={18} />
+                                            </button>
+
+                                            {showChatListMenu === chat.chatId && (
+                                                <>
+                                                    <div
+                                                        className="fixed inset-0 z-10 cursor-default"
+                                                        onClick={() => setShowChatListMenu(null)}
+                                                    ></div>
+                                                    <div className="absolute right-0 top-10 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-20 w-44">
+                                                        <button
+                                                            onClick={(e) => handleDeleteChatFromList(chat, e)}
+                                                            className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                            Delete Chat
+                                                        </button>
+                                                    </div>
+                                                </>
                                             )}
                                         </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex justify-between items-start mb-0.5">
-                                                <h3 className="font-semibold text-gray-900 truncate mr-2">{chat.otherUser.name}</h3>
-                                                <span className="text-xs text-gray-500 flex-shrink-0">{formatTime(chat.lastMessageTime)}</span>
-                                            </div>
-                                            <p className="text-sm text-gray-600 truncate">
-                                                {chat.lastMessage || (chat.lastMessageType === 'image' ? 'Image 🖼️' : 'File 📎')}
-                                            </p>
-                                        </div>
-                                        {chat.unreadCount > 0 && (
-                                            <div className="bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold flex-shrink-0 ml-2">
-                                                {chat.unreadCount}
-                                            </div>
-                                        )}
                                     </div>
-                                </button>
+                                </div>
                             ))}
                         </div>
                     )}
@@ -362,10 +458,13 @@ const Messages = () => {
                         <div className="bg-white border-b border-gray-200 p-4 flex items-center gap-4 shadow-md flex-shrink-0">
                             <button
                                 onClick={() => setSelectedChat(null)}
-                                className="md:hidden text-indigo-600 hover:text-indigo-700"
+                                className="flex items-center gap-2 px-3 py-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all font-medium"
                                 title="Back to Chats"
                             >
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                </svg>
+                                <span className="hidden sm:inline">Back</span>
                             </button>
                             <button
                                 onClick={() => navigate(`/profile/${selectedChat.otherUser._id}`)}
@@ -387,7 +486,7 @@ const Messages = () => {
                                     <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
                                 )}
                             </button>
-                            <div>
+                            <div className="flex-1">
                                 <button
                                     onClick={() => navigate(`/profile/${selectedChat.otherUser._id}`)}
                                     className="font-bold text-gray-900 hover:text-indigo-600 transition-colors text-lg"
@@ -400,6 +499,35 @@ const Messages = () => {
                                     <p className="text-xs text-green-600 font-medium">Online</p>
                                 ) : (
                                     <p className="text-xs text-gray-500">Offline</p>
+                                )}
+                            </div>
+
+                            {/* Chat Menu Button */}
+                            <div className="relative">
+                                <button
+                                    onClick={() => setShowChatMenu(!showChatMenu)}
+                                    className="p-2 text-gray-600 hover:bg-gray-100 rounded-full transition cursor-pointer"
+                                    title="Chat options"
+                                >
+                                    <MoreVertical size={20} />
+                                </button>
+
+                                {showChatMenu && (
+                                    <>
+                                        <div
+                                            className="fixed inset-0 z-10 cursor-default"
+                                            onClick={() => setShowChatMenu(false)}
+                                        ></div>
+                                        <div className="absolute right-0 top-12 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-20 w-48">
+                                            <button
+                                                onClick={handleDeleteChat}
+                                                className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-3 cursor-pointer"
+                                            >
+                                                <Trash2 size={16} />
+                                                Delete Conversation
+                                            </button>
+                                        </div>
+                                    </>
                                 )}
                             </div>
                         </div>

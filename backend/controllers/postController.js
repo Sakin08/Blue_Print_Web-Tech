@@ -261,6 +261,37 @@ export const addComment = async (req, res) => {
   }
 };
 
+// Update comment
+export const updateComment = async (req, res) => {
+  try {
+    const { commentId } = req.params;
+    const { text } = req.body;
+
+    const post = await Post.findById(req.params.id);
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    const comment = post.comments.id(commentId);
+    if (!comment) {
+      return res.status(404).json({ message: "Comment not found" });
+    }
+
+    // Only owner can edit
+    if (comment.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    comment.text = text;
+    await post.save();
+    await post.populate("comments.user", "name profilePicture");
+
+    res.json(post);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // Delete comment
 export const deleteComment = async (req, res) => {
   try {
@@ -284,9 +315,11 @@ export const deleteComment = async (req, res) => {
       return res.status(403).json({ message: "Not authorized" });
     }
 
-    comment.remove();
+    // Use pull to remove the comment from the array
+    post.comments.pull(commentId);
     post.calculateEngagement();
     await post.save();
+    await post.populate("comments.user", "name profilePicture");
 
     res.json(post);
   } catch (error) {

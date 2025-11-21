@@ -6,6 +6,7 @@ import {
   uploadChatFile,
   deleteMessageForMe,
   deleteMessageForEveryone,
+  deleteChat,
 } from "../controllers/chatController.js";
 import { protect } from "../middleware/auth.js";
 
@@ -20,6 +21,7 @@ router.delete(
   protect,
   deleteMessageForEveryone
 );
+router.delete("/:userId/delete-chat", protect, deleteChat);
 router.get("/:userId", protect, getChatHistory);
 
 export default router;

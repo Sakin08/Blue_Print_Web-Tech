@@ -178,3 +178,26 @@ export const deleteMessageForEveryone = async (req, res) => {
     res.status(500).json({ message: "Failed to delete message" });
   }
 };
+
+// Delete entire chat conversation
+export const deleteChat = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const currentUserId = req.user._id.toString();
+    const chatId = generateChatId(currentUserId, userId);
+
+    // Delete all messages in this chat for the current user
+    const result = await Message.updateMany(
+      { chatId },
+      { $addToSet: { deletedFor: currentUserId } }
+    );
+
+    res.json({
+      message: "Chat deleted successfully",
+      deletedCount: result.modifiedCount,
+    });
+  } catch (error) {
+    console.error("Delete chat error:", error);
+    res.status(500).json({ message: "Failed to delete chat" });
+  }
+};

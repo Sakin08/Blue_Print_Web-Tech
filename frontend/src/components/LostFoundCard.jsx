@@ -1,7 +1,8 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { canDelete } from '../utils/permissions';
 import UserAvatar from './UserAvatar';
+import { Edit } from 'lucide-react';
 
 const LostFoundCard = ({ item, onDelete }) => {
     const navigate = useNavigate();
@@ -129,19 +130,29 @@ const LostFoundCard = ({ item, onDelete }) => {
                     View Details →
                 </div>
 
-                {/* Delete Button */}
+                {/* Edit & Delete Buttons */}
                 {showDelete && (
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            if (window.confirm('Are you sure you want to delete this item?')) {
-                                onDelete(item._id);
-                            }
-                        }}
-                        className="mt-3 w-full text-red-600 hover:bg-red-600 hover:text-white px-3 py-2 rounded-lg border border-red-200 transition-all duration-200 text-sm font-semibold"
-                    >
-                        Delete
-                    </button>
+                    <div className="mt-3 flex gap-2">
+                        <Link
+                            to={`/lost-found/edit/${item._id}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="flex-1 text-indigo-600 hover:bg-indigo-600 hover:text-white px-3 py-2 rounded-lg border border-indigo-200 transition-all duration-200 text-sm font-semibold text-center flex items-center justify-center gap-1"
+                        >
+                            <Edit size={14} />
+                            Edit
+                        </Link>
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (window.confirm('Are you sure you want to delete this item?')) {
+                                    onDelete(item._id);
+                                }
+                            }}
+                            className="flex-1 text-red-600 hover:bg-red-600 hover:text-white px-3 py-2 rounded-lg border border-red-200 transition-all duration-200 text-sm font-semibold"
+                        >
+                            Delete
+                        </button>
+                    </div>
                 )}
             </div>
         </div>

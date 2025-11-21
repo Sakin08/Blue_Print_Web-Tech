@@ -12,6 +12,7 @@ export const chatApi = {
     api.delete(`/chat/message/${messageId}/delete-for-me`),
   deleteMessageForEveryone: (messageId) =>
     api.delete(`/chat/message/${messageId}/delete-for-everyone`),
+  deleteChat: (userId) => api.delete(`/chat/${userId}/delete-chat`),
 };
 
 export default chatApi;

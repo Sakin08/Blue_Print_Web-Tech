@@ -30,6 +30,7 @@ const Newsfeed = () => {
     const [onlineUsers, setOnlineUsers] = useState(new Set());
     const observerTarget = useRef(null);
     const centerColumnRef = useRef(null);
+const [showAllFollowing, setShowAllFollowing] = useState(false);
 
     useEffect(() => {
         loadPosts(1);
@@ -452,60 +453,83 @@ const Newsfeed = () => {
                     <div className="lg:col-span-3 space-y-6 overflow-y-auto h-full pb-6">
                         {/* Following Users */}
                         <div className="bg-white rounded-xl shadow-md p-6">
-                            <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                <Users className="w-5 h-5 text-indigo-600" />
-                                Following ({followingUsers.length})
-                            </h3>
-                            <div className="space-y-2 max-h-80 overflow-y-auto">
-                                {followingUsers.length > 0 ? (
-                                    followingUsers.map((followedUser) => {
-                                        const isOnline = onlineUsers.has(followedUser._id);
-                                        return (
-                                            <Link
-                                                key={followedUser._id}
-                                                to={`/messages?userId=${followedUser._id}`}
-                                                className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg transition group"
-                                            >
-                                                <div className="relative flex-shrink-0">
-                                                    {followedUser.profilePicture ? (
-                                                        <img
-                                                            src={followedUser.profilePicture}
-                                                            alt={followedUser.name}
-                                                            className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
-                                                        />
-                                                    ) : (
-                                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-sm font-bold">
-                                                            {followedUser.name?.charAt(0).toUpperCase()}
-                                                        </div>
-                                                    )}
-                                                    {isOnline && (
-                                                        <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
-                                                    )}
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="text-sm font-semibold text-gray-900 truncate group-hover:text-indigo-600">
-                                                        {followedUser.name}
-                                                    </p>
-                                                    <p className="text-xs text-gray-500">
-                                                        {isOnline ? (
-                                                            <span className="text-green-600 font-medium">Online</span>
-                                                        ) : (
-                                                            <span>{formatLastActive(followedUser.lastActive)}</span>
-                                                        )}
-                                                    </p>
-                                                </div>
-                                            </Link>
-                                        );
-                                    })
+    <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+        <Users className="w-5 h-5 text-indigo-600" />
+        Following ({followingUsers.length})
+    </h3>
+
+    {/* FOLLOWING USERS LIST */}
+    <div className="space-y-2 max-h-80 overflow-y-auto">
+
+        {followingUsers.length > 0 ? (
+            <>
+                {/* Show either limited or full list */}
+                {(showAllFollowing ? followingUsers : followingUsers.slice(0, 15)).map((followedUser) => {
+                    const isOnline = onlineUsers.has(followedUser._id);
+
+                    return (
+                        <Link
+                            key={followedUser._id}
+                            to={`/messages?userId=${followedUser._id}`}
+                            className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg transition group"
+                        >
+                            {/* Profile Image */}
+                            <div className="relative flex-shrink-0">
+                                {followedUser.profilePicture ? (
+                                    <img
+                                        src={followedUser.profilePicture}
+                                        alt={followedUser.name}
+                                        className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
+                                    />
                                 ) : (
-                                    <div className="text-center py-6">
-                                        <Users className="w-12 h-12 mx-auto text-gray-300 mb-2" />
-                                        <p className="text-sm text-gray-500">Not following anyone yet</p>
-                                        <p className="text-xs text-gray-400 mt-1">Discover people to follow!</p>
+                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-sm font-bold">
+                                        {followedUser.name?.charAt(0).toUpperCase()}
                                     </div>
                                 )}
+
+                                {/* Online Indicator */}
+                                {isOnline && (
+                                    <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+                                )}
                             </div>
-                        </div>
+
+                            {/* Name & Last Active */}
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold text-gray-900 truncate group-hover:text-indigo-600">
+                                    {followedUser.name}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                    {isOnline ? (
+                                        <span className="text-green-600 font-medium">Online</span>
+                                    ) : (
+                                        <span>{formatLastActive(followedUser.lastActive)}</span>
+                                    )}
+                                </p>
+                            </div>
+                        </Link>
+                    );
+                })}
+
+                {/* Show All / Show Less Button */}
+                {followingUsers.length > 8 && (
+                    <button
+                        onClick={() => setShowAllFollowing(!showAllFollowing)}
+                        className="w-full mt-2 text-center text-sm text-indigo-600 font-semibold hover:underline"
+                    >
+                        {showAllFollowing ? "Show Less" : `Show All (${followingUsers.length})`}
+                    </button>
+                )}
+            </>
+        ) : (
+            <div className="text-center py-6">
+                <Users className="w-12 h-12 mx-auto text-gray-300 mb-2" />
+                <p className="text-sm text-gray-500">Not following anyone yet</p>
+                <p className="text-xs text-gray-400 mt-1">Discover people to follow!</p>
+            </div>
+        )}
+    </div>
+</div>
+
 
                         {/* Trending Topics */}
                         <div className="bg-white rounded-xl shadow-md p-6">

@@ -9,7 +9,7 @@ import MessageButton from '../components/MessageButton';
 import FavoriteButton from '../components/FavoriteButton';
 import {
     ArrowLeft, MapPin, Calendar, Tag, HardHat, AlertTriangle,
-    CheckCircle, Mail, Trash2, Eye, MessageCircle, Search
+    CheckCircle, Mail, Trash2, Eye, MessageCircle, Search, Edit
 } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
@@ -299,6 +299,13 @@ const LostFoundDetails = () => {
                                 {/* Owner Message */}
                                 {isOwner && (
                                     <>
+                                        <Link
+                                            to={`/lost-found/edit/${item._id}`}
+                                            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition"
+                                        >
+                                            <Edit size={16} />
+                                            Edit Post
+                                        </Link>
                                         <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-center">
                                             <p className="text-sm text-blue-800">This is your post</p>
                                         </div>
