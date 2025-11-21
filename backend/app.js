@@ -32,11 +32,7 @@ import busScheduleRoutes from "./routes/busScheduleRoutes.js";
 const app = express();
 
 // CORS configuration for deployment
-const allowedOrigins = [
-  process.env.FRONTEND_URL || "http://localhost:5173",
-  "https://sust-connect.vercel.app", // Production frontend
-  "http://localhost:5173", // Local development
-];
+const allowedOrigins = [process.env.FRONTEND_URL || "http://localhost:5173"];
 
 const corsOptions = {
   origin: function (origin, callback) {

@@ -19,11 +19,7 @@ const httpServer = createServer(app);
 // Initialize Socket.io with CORS for frontend
 const io = new Server(httpServer, {
   cors: {
-    origin: [
-      process.env.FRONTEND_URL || "http://localhost:5173",
-      "https://sust-connect.vercel.app", // Production frontend
-      "http://localhost:5173", // Local development
-    ],
+    origin: [process.env.FRONTEND_URL || "http://localhost:5173"],
     credentials: true,
     methods: ["GET", "POST"],
   },
