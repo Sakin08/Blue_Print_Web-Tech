@@ -62,6 +62,9 @@ app.use(cors(corsOptions));
 
 app.use(express.json());
 app.use(cookieParser());
+app.get("/", (req, res) => {
+  res.send("SUST Connect backend is running!");
+});
 
 // Routes
 app.use("/api/auth", authRoutes);
